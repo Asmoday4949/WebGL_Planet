@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="./css/stylesheet.css">
+
+		<script src="./js/commonFunctions.js"></script>
+		<script src='./js/gl-matrix-min.js'></script>
+		<script src='./js/webglTools.js'></script>
+		<script src="./js/External/simplex-noise.js"></script>
+		<script src="./js/TP/Tools.js"></script>
+		<script src="./js/TP/Entity.js"></script>
+		<script src="./js/TP/IcoSphere.js"></script>
+		<script src='./js/TP/Terrain.js'></script>
+		<script src="./js/TP/FpsCounter.js"></script>
+		<script src="./js/TP/Camera.js"></script>
+
+		<script id="shader-vs" type="x-shader/x-vertex">
+			uniform mat4 uMVMatrix;
+			uniform mat4 uPMatrix;
+			attribute vec3 aVertexPosition;
+			attribute vec4 aVertexColor;
+			varying vec4 vVertexColor;
+
+			void main(void)
+			{
+				gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+				vVertexColor = aVertexColor;
+			}
+		</script>
+		<script id="shader-fs" type="x-shader/x-fragment">
+			#ifdef GL_ES
+				precision highp float;
+			#endif
+			varying vec4 vVertexColor;
+
+			void main(void)
+			{
+				gl_FragColor = vVertexColor;
+			}
+		</script>
+
+		<script id="water-shader-vs" type="x-shader/x-vertex">
+			uniform mat4 uMVMatrix;
+			uniform mat4 uPMatrix;
+			attribute vec3 aVertexPosition;
+			attribute vec4 aVertexColor;
+			varying vec4 vVertexColor;
+
+			void main(void)
+			{
+				gl_PointSize = 10.0;
+				gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+				vVertexColor = aVertexColor;
+			}
+		</script>
+		<script id="water-shader-fs" type="x-shader/x-fragment">
+			#ifdef GL_ES
+				precision highp float;
+			#endif
+			varying vec4 vVertexColor;
+
+			void main(void)
+			{
+				gl_FragColor = vVertexColor;
+			}
+		</script>
+
+		<script>
+			var mat4 = glMatrix.mat4;
+			var vec3 = glMatrix.vec3;
+			var vec4 = glMatrix.vec4;
+
+			var mvMatrix = mat4.create();
+			var pMatrix = mat4.create();
+			var vMatrix = mat4.create();
+
+			var camera = new Camera(500, 500);
+			var icoSphere = new IcoSphere(camera, 7, true);
+			var fpsCounter = new FpsCounter();
+
+			function initShaderParameters(prg)
+			{
+				//prg.pMatrixUniform = glContext.getUniformLocation(prg, 'uPMatrix');
+		    //prg.mvMatrixUniform = glContext.getUniformLocation(prg, 'uMVMatrix');
+				camera.setupShader(prg);
+				icoSphere.setupShader(prg);
+			}
+
+			function initBuffers()
+			{
+				//camera.rotateY(-Math.PI/2);
+				camera.moveBackward(250);
+				icoSphere.scale(100);
+				icoSphere.createGeometry();
+			}
+
+			function drawScene()
+			{
+				glContext.useProgram(prg);
+				glContext.clearColor(0.0, 0.0, 0.0, 1.0);
+				glContext.enable(glContext.DEPTH_TEST);
+				glContext.clear(glContext.COLOR_BUFFER_BIT | glContext.DEPTH_BUFFER_BIT);
+				glContext.viewport(0, 0, c_width, c_height);
+
+				mat4.identity(mvMatrix);
+				mat4.multiply(mvMatrix, camera.getView(), icoSphere.getModel());
+
+				// Comment passer le model de chaque objet ?
+				// Passer le model à partir des objets directement au shader ?
+				// Passer tous les objets dans la camera et parcours tous les objets pour obtenir les model ?
+				// Séparer le model de la view et de la projection
+				glContext.uniformMatrix4fv(prg.pMatrixUniform, false, camera.getProjection());
+				glContext.uniformMatrix4fv(prg.mvMatrixUniform, false, mvMatrix);
+				//icoSphere.rotateY(Math.PI / 100);
+
+				icoSphere.render();
+				fpsCounter.update();
+			}
+
+			function initWebGL()
+			{
+				glContext = getGLContext('webgl-canvas');
+
+				//programsDict = initPrograms(["terrain-shader", "water-shader"]);
+				//terrainPrg = programsDict["terrain-shader"];
+				//waterPrg = programsDict["water-shader"];
+
+				//initTerrainShaderParameters(terrainPrg);
+				//initWaterShaderParameters(waterPrg);
+
+				initProgram();
+				initBuffers();
+				renderLoop();
+			}
+		</script>
+	</head>
+	<body onload="initWebGL()">
+		<script>
+			displayTitle("TP: Génération procédurale de terrain", 1, 1, 1, 1, 1, 1, 1);
+		</script>
+
+		<h2>Paramètres</h2>
+		<br>
+		<label for="seed-txt">Graine : </label>
+		<input type="text" name="seed" id="seed-txt" value="SEED"><button type="button" onclick="randAction()" id="random-btn">Random</button><br>
+
+		<label for="size-planet">Taille de la planète : </label>
+		<input type="number" name="size" id="size-planet" min="1" max="1000"><br>
+
+		<label for="lod-distance">Distance de LOD : </label>
+		<input type="number" name="lod" id="lod-distance" min="1" max="3"><br>
+
+		<label for="layer1mul">Multiplication couche 1 : </label>
+		<input type="number" name="layer1mul" id="layer1-multiply" value="3" min="1" max="100"><br>
+		<label for="layer1div">Division couche 1 : </label>
+		<input type="number" name="layer1div" id="layer1-divisor"  value="20" min="1" max="100"><br>
+
+		<label for="layer2mul">Multiplication couche 2 : </label>
+		<input type="number" name="layer2mul" id="layer2-multiply" min="1" max="100"><br>
+		<label for="layer2div">Division couche 2 : </label>
+		<input type="number" name="layer2div" id="layer2-divisor" min="1" max="100"><br>
+
+		<button type="button" onclick="applyAction()" id="apply-btn">Apply</button>
+		<br>
+		<br>
+		<div id="fps-counter">FPS : 0</div>
+		<canvas id="webgl-canvas" width="500" height="500">HTML5 is not supported</canvas>
+
+		<h2>Objectifs primaires</h2>
+		<ul>
+			<li>Creation d'une planète à l'aide l'icosaèdre subdivisé</li>
+			<li>Génération de hauteurs différentes pour le terrain</li>
+			<li>Génération déterministe de terrain (à l'aide d'une graine)</li>
+			<li>Mise en place d'un système de "LOD" naif</li>
+			<li>Définir une couleur selon la hauteur du terrain</li>
+		</ul>
+
+		<h2>Objectifs secondaires</h2>
+		<ul>
+			<li>Ajout de textures pour les différents niveaux du terrain</li>
+			<li>Ajout d'éléments de décores afin de rendre plus cohérent l'environnement</li>
+			<li>Amélioration du système de "LOD" (octree ?)</li>
+		</ul>
+
+		<h2>Sphère</h2>
+		<p>Pour la création de la sphère, j'ai utilisé l'icosèdre avec subidivision. Cette technique permet d'avoir des sphères uniforme.
+		Une première technique pour diminuer l'empreinte mémoire a été de vérifier si un triangle voisin n'as pas déjà effectuer l'opération de "midpoint" sur un de ses cotés.
+		Si le vertex n'est pas encore créé, on le créé et autrement on va le rechercher dans un cache afin de récupérer l'indice de ce vertex existants.
+		La seconde est d'utiliser un système de "LOD" (Level of Details). L'idée est d'augmenter le nombre de vertices de la partie intéressante de notre mesh. C'est-à-dire
+	 que plus la caméra est proche d'une zone d'intérêt, plus le nombre de vertices sera important. Moins la zone a d'intérêt, moins le nombre de vertices est important.</p>
+
+		<h2>Reliefs</h2>
+		<p>La création de reliefs sur la sphère a été effectué avec l'algorithme "Simplex Noise" (bruit de perlin améliorée).
+			Cet algorithme permet de créer du bruit de perlin, ce qui me permet de générer des hauteurs pour tous les vertices de mon terrain.
+			Un autre avantage, c'est qu'il est déterministe. ... continue</p>
+
+		<h2>Couleurs/textures</h2>
+		<p>Les couleurs de la planète sont définies en fonction de la hauteur des vertices.</p>
+
+	</body>
+	<script>
+	fpsCounter.setDiv(document.getElementById("fps-counter"));
+
+	document.onkeydown = checkKey;
+
+	function applyAction()
+	{
+		let seed = document.getElementById("seed-txt").value;
+
+		let layer1Mul = document.getElementById("layer1-multiply").value;
+		let layer1Div = document.getElementById("layer1-divisor").value;
+		let layer2Mul = document.getElementById("layer2-multiply").value;
+		let layer2Div = document.getElementById("layer2-divisor").value;
+
+		icoSphere.setSeed(seed);
+		icoSphere.setTopographyLayers(layer1Mul, layer1Div, layer2Mul, layer2Div);
+		icoSphere.createGeometry();
+	}
+
+	function randAction()
+	{
+		let randomSeed = generateSeed();
+
+		document.getElementById("seed-txt").value = randomSeed;
+	}
+
+	function checkKey(e)
+	{
+		e = e || window.event;
+
+		if (e.key == 'w')
+		{
+			camera.moveForward(10);
+		}
+		if (e.key == 's')
+		{
+			camera.moveBackward(10);
+		}
+		if (e.key == 'a')
+		{
+			camera.moveLeft(10);
+		}
+		if (e.key == 'd')
+		{
+			camera.moveRight(10);
+		}
+
+		if (e.key == 'j')
+		{
+			camera.rotateY(Math.PI/25);
+		}
+		if (e.key == 'l')
+		{
+			camera.rotateY(-Math.PI/25);
+		}
+
+		icoSphere.createGeometry();
+	}
+	</script>
+</html>
