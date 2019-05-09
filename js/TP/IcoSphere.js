@@ -12,6 +12,10 @@ class IcoSphere extends Entity
       this.seed = "SEED";
       this.size = 0;
 
+      this.seaLevel = 1.0;
+      this.wave = 0.0;
+      this.angle = 0.0;
+
       this.initBuffers();
    }
 
@@ -36,7 +40,6 @@ class IcoSphere extends Entity
       this.initBuffers();
       this.createIcosahedron();
       this.subdivideRecStart(this.subdivision);
-      this.colorizeDependingHeight();
 
       this.verticesBuffer = getVertexBufferWithVertices(this.vertices);
       this.colorsBuffer = getVertexBufferWithVertices(this.colors);
@@ -51,8 +54,8 @@ class IcoSphere extends Entity
 
       prg.vertexPositionAttribute = glContext.getAttribLocation(prg, "aVertexPosition");
       glContext.enableVertexAttribArray(prg.vertexPositionAttribute);
-      prg.colorAttribute = glContext.getAttribLocation(prg, "aVertexColor");
-      glContext.enableVertexAttribArray(prg.colorAttribute);
+      prg.seaLevel = glContext.getUniformLocation(prg, "uSeaLevel");
+      prg.wave = glContext.getUniformLocation(prg, "uWave");
    }
 
    // To call inside drawScene
@@ -61,11 +64,14 @@ class IcoSphere extends Entity
       let prg = this.prg;
       let wireFrameMode = this.wireFrameMode;
 
+      this.angle += 0.01;
+      this.wave = 0.5 + Math.sin(this.angle) * 0.5;
+
       glContext.useProgram(prg);
       glContext.bindBuffer(glContext.ARRAY_BUFFER, this.verticesBuffer);
       glContext.vertexAttribPointer(prg.vertexPositionAttribute, 3, glContext.FLOAT, false, 0, 0);
-      glContext.bindBuffer(glContext.ARRAY_BUFFER, this.colorsBuffer);
-      glContext.vertexAttribPointer(prg.colorAttribute, 4, glContext.FLOAT, false, 0, 0);
+      glContext.uniform1f(prg.seaLevel, this.seaLevel);
+      glContext.uniform1f(prg.wave, this.wave);
 
       if(wireFrameMode)
       {
@@ -151,19 +157,19 @@ class IcoSphere extends Entity
          {
             let length = this.checkClosest(cameraVec, i1, i2, i3);
 
-            if(length > 500)
+            if(length > 1000)
             {
                depth -= 6;
             }
-            else if(length > 350)
+            else if(length > 700)
             {
                depth -= 5;
             }
-            else if(length > 250)
+            else if(length > 500)
             {
                depth -= 4;
             }
-            else if(length > 50)
+            else if(length > 100)
             {
                depth -= 3;
             }
@@ -292,16 +298,17 @@ class IcoSphere extends Entity
 
    defineHeight(vector)
    {
-     let value = 0;
+     let height = 0;
      let layer1Mul = this.layer1Mul;
      let layer1Div = this.layer1Div;
      let layer2Mul = this.layer2Mul;
      let layer2Div = this.layer2Div;
 
-     value += this.simplexNoise.noise3D(vector[0] * layer1Mul, vector[1] * layer1Mul, vector[2] * layer1Mul) / layer1Div;
-     //value += this.simplexNoise.noise3D(vector[0] * layer2Mul, vector[1] * layer2Mul, vector[2] * layer2Mul) / layer2Div;
+     height += this.simplexNoise.noise3D(vector[0] * layer1Mul, vector[1] * layer1Mul, vector[2] * layer1Mul) / layer1Div;
+     //height += this.simplexNoise.noise3D(vector[0] * layer2Mul, vector[1] * layer2Mul, vector[2] * layer2Mul) / layer2Div;
+     //height = height / 2.0;
 
-     return this.createVectorLength(copyArray(vector), value);
+     return this.createVectorLength(copyArray(vector), height);
    }
 
    colorizeDependingHeight()
@@ -441,6 +448,11 @@ class IcoSphere extends Entity
    setSeed(seed)
    {
      this.seed = seed;
+   }
+
+   setSeaLevel(seaLevel)
+   {
+     this.seaLevel = seaLevel;
    }
 
    setTopographyLayers(layer1Mul, layer1Div, layer2Mul, layer2Div)

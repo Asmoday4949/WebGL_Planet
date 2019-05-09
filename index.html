@@ -18,51 +18,127 @@
 		<script id="shader-vs" type="x-shader/x-vertex">
 			uniform mat4 uMVMatrix;
 			uniform mat4 uPMatrix;
+			uniform float uSeaLevel;
 			attribute vec3 aVertexPosition;
 			attribute vec4 aVertexColor;
-			varying vec4 vVertexColor;
+			varying vec3 vVertexPosition;
+			varying vec3 vOriginalVertexPosition;
 
 			void main(void)
 			{
-				gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-				vVertexColor = aVertexColor;
+				vVertexPosition = aVertexPosition;
+				vOriginalVertexPosition = aVertexPosition;
+
+				if(length(aVertexPosition) < uSeaLevel)
+				{
+					vVertexPosition = normalize(vVertexPosition) * uSeaLevel;
+				}
+
+				gl_Position = uPMatrix * uMVMatrix * vec4(vVertexPosition, 1.0);
 			}
 		</script>
 		<script id="shader-fs" type="x-shader/x-fragment">
 			#ifdef GL_ES
 				precision highp float;
 			#endif
-			varying vec4 vVertexColor;
+			varying vec3 vVertexPosition;
+			varying vec3 vOriginalVertexPosition;
+
+			uniform float uSeaLevel;
+			uniform float uWave;
+
+			//uniform vec3 vHeightColorsSet1;
+			//uniform vec3 vHeightColorsSet2;
+			//uniform vec3 vHeightColorsSet3;
 
 			void main(void)
 			{
-				gl_FragColor = vVertexColor;
-			}
-		</script>
+				vec4 currentColor = vec4(1.0,1.0,1.0,1.0);
+				float height = length(vOriginalVertexPosition);
 
-		<script id="water-shader-vs" type="x-shader/x-vertex">
-			uniform mat4 uMVMatrix;
-			uniform mat4 uPMatrix;
-			attribute vec3 aVertexPosition;
-			attribute vec4 aVertexColor;
-			varying vec4 vVertexColor;
+				vec4 heightColor1;
+				vec4 heightColor2;
+				float percent;
 
-			void main(void)
-			{
-				gl_PointSize = 10.0;
-				gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-				vVertexColor = aVertexColor;
-			}
-		</script>
-		<script id="water-shader-fs" type="x-shader/x-fragment">
-			#ifdef GL_ES
-				precision highp float;
-			#endif
-			varying vec4 vVertexColor;
+				float seaLevel = 1.0;
 
-			void main(void)
-			{
-				gl_FragColor = vVertexColor;
+				vec4 color0 = vec4(0.131, 0.139, 0.776, 1.0);
+        vec4 color1 = vec4(0.505, 0.623, 0.905, 1.0);
+        vec4 color2 = vec4(0.674, 0.788, 1.000, 1.0);
+        vec4 color3 = vec4(0.074, 0.494, 0.188, 1.0);
+        vec4 color4 = vec4(0.549, 0.599, 0.315, 1.0);
+        vec4 color5 = vec4(0.890, 0.792, 0.439, 1.0);
+        vec4 color6 = vec4(0.627, 0.858, 0.915, 1.0);
+        vec4 color7 = vec4(0.901, 0.945, 0.941, 1.0);
+        vec4 color8 = vec4(1.000, 1.000, 1.000, 1.0);
+
+				float level0 = uSeaLevel - 0.020;
+				float level1 = uSeaLevel - 0.010;
+				float level2 = uSeaLevel + 0.001;
+				float level3 = uSeaLevel + 0.005;
+				float level4 = uSeaLevel + 0.045;
+				float level5 = uSeaLevel + 0.060;
+				float level6 = uSeaLevel + 0.070;
+				float level7 = uSeaLevel + 0.075;
+				float level8 = uSeaLevel + 0.080;
+
+				if(height < level0)
+				{
+					heightColor1 = color0;
+					heightColor2 = heightColor1;
+					percent = 1.0;
+				}
+				else if(height < level1)
+        {
+					heightColor1 = color0;
+					heightColor2 = color1;
+					percent = (level1 - height) / (level1 - level0) + uWave;
+        }
+				else if(height < level2)
+        {
+					heightColor1 = color1;
+					heightColor2 = color2;
+					percent = (level2 - height) / (level2 - level1) + uWave;
+        }
+			  else if(height < level3)
+        {
+					heightColor1 = color2;
+					heightColor2 = color3;
+					percent = (level3 - height) / (level3 - level2) + uWave;
+        }
+        else if(height < level4)
+        {
+					heightColor1 = color3;
+					heightColor2 = color4;
+					percent = (level4 - height) / (level4 - level3);
+        }
+				else if(height < level5)
+				{
+					heightColor1 = color4;
+					heightColor2 = color5;
+					percent = (level5 - height) / (level5 - level4);
+				}
+				else if(height < level6)
+				{
+					heightColor1 = color5;
+					heightColor2 = color6;
+					percent = (level6 - height) / (level6 - level5);
+				}
+				else if(height < level7)
+				{
+					heightColor1 = color6;
+					heightColor2 = color7;
+					percent = (level7 - height) / (level7 - level6);
+				}
+				else
+				{
+					heightColor1 = color7;
+					heightColor2 = color8;
+					percent = (level8 - height) / (level8 - level7);
+				}
+
+				currentColor = heightColor1 * percent + heightColor2 * (1.0 - percent);
+				gl_FragColor = currentColor;
 			}
 		</script>
 
@@ -76,7 +152,7 @@
 			var vMatrix = mat4.create();
 
 			var camera = new Camera(500, 500);
-			var icoSphere = new IcoSphere(camera, 7, true);
+			var icoSphere = new IcoSphere(camera, 6, false);
 			var fpsCounter = new FpsCounter();
 
 			function initShaderParameters(prg)
@@ -166,6 +242,8 @@
 		<br>
 		<div id="fps-counter">FPS : 0</div>
 		<canvas id="webgl-canvas" width="500" height="500">HTML5 is not supported</canvas>
+
+		<input type="range" min="0.0" max="2.0" value="1.0" step="0.01" class="slider" id="sea-level">
 
 		<h2>Objectifs primaires</h2>
 		<ul>
@@ -257,5 +335,13 @@
 
 		icoSphere.createGeometry();
 	}
+
+	let seaLevelSlider = document.getElementById("sea-level");
+	seaLevelSlider.oninput = function()
+	{
+		console.log(seaLevelSlider.value);
+		icoSphere.setSeaLevel(seaLevelSlider.value);
+	}
+
 	</script>
 </html>
