@@ -73,7 +73,7 @@
         vec4 color8 = vec4(1.000, 1.000, 1.000, 1.0);
 
 				float level0 = uSeaLevel - 0.020;
-				float level1 = uSeaLevel - 0.010;
+				float level1 = uSeaLevel - 0.001;
 				float level2 = uSeaLevel + 0.001;
 				float level3 = uSeaLevel + 0.005;
 				float level4 = uSeaLevel + 0.045;
@@ -92,19 +92,22 @@
         {
 					heightColor1 = color0;
 					heightColor2 = color1;
-					percent = (level1 - height) / (level1 - level0) + uWave;
+					percent = (level1 - height) / (level1 - level0);
         }
 				else if(height < level2)
         {
 					heightColor1 = color1;
 					heightColor2 = color2;
 					percent = (level2 - height) / (level2 - level1) + uWave;
+
+					if(percent > 1.0)
+						percent = -1.0;
         }
 			  else if(height < level3)
         {
 					heightColor1 = color2;
 					heightColor2 = color3;
-					percent = (level3 - height) / (level3 - level2) + uWave;
+					percent = (level3 - height) / (level3 - level2);
         }
         else if(height < level4)
         {
@@ -216,34 +219,49 @@
 			displayTitle("TP: Génération procédurale de terrain", 1, 1, 1, 1, 1, 1, 1);
 		</script>
 
-		<h2>Paramètres</h2>
+		<p>Cette application webGL permet la génération de terrain d'une planète de manière procédurale. Elle comporte deux catégories de paramètres modifiables :
+		<ol>
+			<li>statiques: tous les paramètres modifiés doivent obligatoirement être valider afin de regénérer la planète.</li>
+			<li>dynamique: tous les paramètres sont appliqués en direct et ne nécessite aucune validation.</li>
+		</ol>
+
+		<h2>Paramètres statiques</h2>
 		<br>
 		<label for="seed-txt">Graine : </label>
 		<input type="text" name="seed" id="seed-txt" value="SEED"><button type="button" onclick="randAction()" id="random-btn">Random</button><br>
 
-		<label for="size-planet">Taille de la planète : </label>
-		<input type="number" name="size" id="size-planet" min="1" max="1000"><br>
+		<label for="layer1mul">Répétition du pattern 1 : </label>
+		<input type="number" name="layer1mul" id="layer1-multiply" value="0.5" min="0.0" max="1.0" step="0.05">
+		<label for="layer1div">Hauteur 1 : </label>
+		<input type="number" name="layer1div" id="layer1-divisor"  value="0.5" min="0.0" max="1.0" step="0.05"><br>
+
+		<label for="layer2mul">Répétition du pattern 2 : </label>
+		<input type="number" name="layer2mul" id="layer2-multiply" value="0.5" min="0.0" max="1.0" step="0.05">
+		<label for="layer2div">Hauteur 2 : </label>
+		<input type="number" name="layer2div" id="layer2-divisor" value="0.5" min="0.0" max="1.0" step="0.05"><br>
+
+		<br>
+		<button type="button" onclick="applyAction()" id="apply-btn">Apply</button>
+		<br>
+
+		<h2>Paramètres dynamiques</h2>
+		<br>
+		<label for="wireframe-checkbox">Wireframe : </label>
+		<input type="checkbox" id="wireframe-checkbox" onclick="setWireframeMode()"><br>
 
 		<label for="lod-distance">Distance de LOD : </label>
 		<input type="number" name="lod" id="lod-distance" min="1" max="3"><br>
 
-		<label for="layer1mul">Multiplication couche 1 : </label>
-		<input type="number" name="layer1mul" id="layer1-multiply" value="3" min="1" max="100"><br>
-		<label for="layer1div">Division couche 1 : </label>
-		<input type="number" name="layer1div" id="layer1-divisor"  value="20" min="1" max="100"><br>
+		<label for="sea-level">Niveau de la mer : </label>
+		<input type="range" min="0.8" max="1.2" value="1.0" step="0.005" onchange="updateSeaLevel()" class="slider" id="sea-level"><p id="sea-level-value"></p>
 
-		<label for="layer2mul">Multiplication couche 2 : </label>
-		<input type="number" name="layer2mul" id="layer2-multiply" min="1" max="100"><br>
-		<label for="layer2div">Division couche 2 : </label>
-		<input type="number" name="layer2div" id="layer2-divisor" min="1" max="100"><br>
+		<h2>Résultat</h2>
 
-		<button type="button" onclick="applyAction()" id="apply-btn">Apply</button>
-		<br>
 		<br>
 		<div id="fps-counter">FPS : 0</div>
 		<canvas id="webgl-canvas" width="500" height="500">HTML5 is not supported</canvas>
 
-		<input type="range" min="0.0" max="2.0" value="1.0" step="0.01" class="slider" id="sea-level">
+
 
 		<h2>Objectifs primaires</h2>
 		<ul>
@@ -280,8 +298,6 @@
 	<script>
 	fpsCounter.setDiv(document.getElementById("fps-counter"));
 
-	document.onkeydown = checkKey;
-
 	function applyAction()
 	{
 		let seed = document.getElementById("seed-txt").value;
@@ -291,6 +307,12 @@
 		let layer2Mul = document.getElementById("layer2-multiply").value;
 		let layer2Div = document.getElementById("layer2-divisor").value;
 
+		layer1Mul = convertNormalizedValue(0.0, 6.0, layer1Mul);
+		layer2Mul = convertNormalizedValue(0.0, 6.0, layer2Mul);
+		layer1Div = convertNormalizedValue(1.0, 30.0, layer1Div, true);
+		layer2Div = convertNormalizedValue(1.0, 30.0, layer2Div, true);
+
+		icoSphere.setWireframe(false);
 		icoSphere.setSeed(seed);
 		icoSphere.setTopographyLayers(layer1Mul, layer1Div, layer2Mul, layer2Div);
 		icoSphere.createGeometry();
@@ -303,6 +325,28 @@
 		document.getElementById("seed-txt").value = randomSeed;
 	}
 
+	function setWireframeMode()
+	{
+		let enableWireframe = document.getElementById("wireframe-checkbox").checked;
+
+		icoSphere.setWireframe(enableWireframe);
+	}
+
+	function updateSeaLevel()
+	{
+		let seaLevelSlider = document.getElementById("sea-level");
+		let seaLevelText = document.getElementById("sea-level-value");
+
+		icoSphere.setSeaLevel(seaLevelSlider.value);
+		seaLevelText.innerHTML = seaLevelSlider.value;
+	}
+
+	function convertNormalizedValue(min, max, percent, inverse=false)
+	{
+		return (inverse * max) - (min + ((max-min) * percent));
+	}
+
+	document.onkeydown = checkKey;
 	function checkKey(e)
 	{
 		e = e || window.event;
@@ -334,13 +378,6 @@
 		}
 
 		icoSphere.createGeometry();
-	}
-
-	let seaLevelSlider = document.getElementById("sea-level");
-	seaLevelSlider.oninput = function()
-	{
-		console.log(seaLevelSlider.value);
-		icoSphere.setSeaLevel(seaLevelSlider.value);
 	}
 
 	</script>

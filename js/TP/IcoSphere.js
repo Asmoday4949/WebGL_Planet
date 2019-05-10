@@ -64,7 +64,7 @@ class IcoSphere extends Entity
       let prg = this.prg;
       let wireFrameMode = this.wireFrameMode;
 
-      this.angle += 0.01;
+      this.angle += 0.03;
       this.wave = 0.5 + Math.sin(this.angle) * 0.5;
 
       glContext.useProgram(prg);
@@ -305,8 +305,8 @@ class IcoSphere extends Entity
      let layer2Div = this.layer2Div;
 
      height += this.simplexNoise.noise3D(vector[0] * layer1Mul, vector[1] * layer1Mul, vector[2] * layer1Mul) / layer1Div;
-     //height += this.simplexNoise.noise3D(vector[0] * layer2Mul, vector[1] * layer2Mul, vector[2] * layer2Mul) / layer2Div;
-     //height = height / 2.0;
+     height += this.simplexNoise.noise3D(vector[0] * layer2Mul, vector[1] * layer2Mul, vector[2] * layer2Mul) / layer2Div;
+     height = height / 2.0;
 
      return this.createVectorLength(copyArray(vector), height);
    }
@@ -461,5 +461,10 @@ class IcoSphere extends Entity
       this.layer1Div = layer1Div;
       this.layer2Mul = layer2Mul;
       this.layer2Div = layer2Div;
+   }
+
+   setWireframe(enable)
+   {
+     this.wireFrameMode = enable;
    }
 }
