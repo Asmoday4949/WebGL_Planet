@@ -357,6 +357,24 @@
 	}
 
 	let startTime = Date.now();
+	let keyDownTriggered = false;
+	function onKeyDown(e)
+	{
+		if(!keyDownTriggered && e.repeat)
+		{
+			keyDownTriggered = !keyDownTriggered;
+			startTime = Date.now();
+		}
+	}
+
+	function onKeyUp(e)
+	{
+		if(keyDownTriggered)
+		{
+			keyDownTriggered = !keyDownTriggered;
+		}
+	}
+
 	function onKeyPressed(e)
 	{
 		let angle = Math.PI / 360.0;
@@ -388,6 +406,8 @@
 		icoSphere.createGeometry();
 	}
 
+	document.onkeydown = onKeyDown;
+	document.onkeyup = onKeyUp;
 	document.onkeypress = onKeyPressed;
 
 	</script>
