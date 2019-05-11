@@ -169,7 +169,7 @@
 			function initBuffers()
 			{
 				//camera.rotateY(-Math.PI/2);
-				camera.moveBackward(250);
+				camera.update();
 				icoSphere.scale(100);
 				icoSphere.createGeometry();
 			}
@@ -253,7 +253,7 @@
 		<input type="number" name="lod" id="lod-distance" min="1" max="3"><br>
 
 		<label for="sea-level">Niveau de la mer : </label>
-		<input type="range" min="0.8" max="1.2" value="1.0" step="0.005" onchange="updateSeaLevel()" class="slider" id="sea-level"><p id="sea-level-value"></p>
+		<input type="range" min="0.0" max="1.0" value="0.5" step="0.01" onchange="updateSeaLevel()" class="slider" id="sea-level"></input>
 
 		<h2>Résultat</h2>
 
@@ -298,6 +298,8 @@
 	<script>
 	fpsCounter.setDiv(document.getElementById("fps-counter"));
 
+	let angle = 0.0;
+
 	function applyAction()
 	{
 		let seed = document.getElementById("seed-txt").value;
@@ -335,50 +337,58 @@
 	function updateSeaLevel()
 	{
 		let seaLevelSlider = document.getElementById("sea-level");
-		let seaLevelText = document.getElementById("sea-level-value");
 
-		icoSphere.setSeaLevel(seaLevelSlider.value);
-		seaLevelText.innerHTML = seaLevelSlider.value;
+		let seaLevel = convertNormalizedValue(0.9, 1.1, seaLevelSlider.value);
+
+		icoSphere.setSeaLevel(seaLevel);
+		seaLevelSlider.innerHTML = seaLevel;
 	}
 
 	function convertNormalizedValue(min, max, percent, inverse=false)
 	{
-		return (inverse * max) - (min + ((max-min) * percent));
+		if(inverse)
+		{
+			return max - (min + ((max-min) * percent));
+		}
+		else
+		{
+			return min + ((max-min) * percent);
+		}
 	}
 
-	document.onkeydown = checkKey;
-	function checkKey(e)
+	let startTime = Date.now();
+	function onKeyPressed(e)
 	{
+		let angle = Math.PI / 360.0;
+		let move = 1.0;
 		e = e || window.event;
+
+		let endTime = Date.now();
+		let elapsedTime = (endTime - startTime) / 10.0;
+		startTime = endTime;
 
 		if (e.key == 'w')
 		{
-			camera.moveForward(10);
+			camera.moveForward(move, elapsedTime);
 		}
 		if (e.key == 's')
 		{
-			camera.moveBackward(10);
+			camera.moveBackward(move, elapsedTime);
 		}
 		if (e.key == 'a')
 		{
-			camera.moveLeft(10);
+			camera.rotate(angle, elapsedTime);
 		}
 		if (e.key == 'd')
 		{
-			camera.moveRight(10);
+			camera.rotate(-angle, elapsedTime);
 		}
 
-		if (e.key == 'j')
-		{
-			camera.rotateY(Math.PI/25);
-		}
-		if (e.key == 'l')
-		{
-			camera.rotateY(-Math.PI/25);
-		}
-
+		camera.update();
 		icoSphere.createGeometry();
 	}
+
+	document.onkeypress = onKeyPressed;
 
 	</script>
 </html>

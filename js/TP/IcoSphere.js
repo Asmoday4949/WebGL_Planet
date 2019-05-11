@@ -144,9 +144,10 @@ class IcoSphere extends Entity
       let vertices = this.vertices;
       let copyIndices = copyArray(this.indices);
       let copyDepth = depth;
-      let cameraVec = this.createVectorFromPositions(this.getPosition(), this.camera.getPosition())
+      let cameraVec = this.createVectorFromPositions(this.camera.getPosition(), this.getPosition());
       let cache = new Map();
 
+      this.indices = [];
       for(let i = 0; i < copyIndices.length; i+=3)
       {
          let i1 = copyIndices[i];
@@ -232,7 +233,7 @@ class IcoSphere extends Entity
       let vertices = this.vertices;
       let indices = this.indices;
       let colors = this.colors;
-      let cameraVec = this.createVectorFromPositions(this.getPosition(), this.camera.getPosition());
+      let cameraVec = this.createVectorFromPositions(this.camera.getPosition(), this.getPosition());
 
       for(let i = 0; i < recursion; i++)
       {
@@ -304,9 +305,8 @@ class IcoSphere extends Entity
      let layer2Mul = this.layer2Mul;
      let layer2Div = this.layer2Div;
 
-     height += this.simplexNoise.noise3D(vector[0] * layer1Mul, vector[1] * layer1Mul, vector[2] * layer1Mul) / layer1Div;
-     height += this.simplexNoise.noise3D(vector[0] * layer2Mul, vector[1] * layer2Mul, vector[2] * layer2Mul) / layer2Div;
-     height = height / 2.0;
+     height += (this.simplexNoise.noise3D(vector[0] * layer1Mul, vector[1] * layer1Mul, vector[2] * layer1Mul) / layer1Div) * 0.75;
+     height += (this.simplexNoise.noise3D(vector[0] * layer2Mul, vector[1] * layer2Mul, vector[2] * layer2Mul) / layer2Div) * 0.25;
 
      return this.createVectorLength(copyArray(vector), height);
    }
@@ -354,7 +354,8 @@ class IcoSphere extends Entity
       let v3 = vec3.fromValues(this.vertices[i3*3] * this.size, this.vertices[i3*3+1] * this.size, this.vertices[i3*3+2] * this.size);
 
       let tempVector = vec3.fromValues((v1[0] + v2[0] + v3[0])/3.0, (v1[1] + v2[1] + v3[1])/3.0, (v1[2] + v2[2] + v3[2])/3.0);
-      let diffVector = vec3.fromValues(cameraVec[0]-tempVector[0], cameraVec[1]-tempVector[1], cameraVec[2]-tempVector[2]);
+      //let diffVector = vec3.fromValues(cameraVec[0]-tempVector[0], cameraVec[1]-tempVector[1], cameraVec[2]-tempVector[2]);
+      let diffVector = vec3.fromValues(tempVector[0]-cameraVec[0], tempVector[1]-cameraVec[1], tempVector[2]-cameraVec[2]);
 
       return vec3.length(diffVector);
    }

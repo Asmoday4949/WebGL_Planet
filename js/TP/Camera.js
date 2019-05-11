@@ -17,8 +17,9 @@ class Camera
       mat4.identity(this.projection);
       mat4.perspective(this.projection, degToRad(fieldOfView), width / height, near, far);
 
-      this.rotation = vec4.fromValues(0.0,0.0,0.0,1.0);
-      this.position = vec4.fromValues(0.0,0.0,0.0,1.0);
+      this.distance = 250.0;
+      this.angle = 0.0;
+      this.rotate(0.0, 1.0);
    }
 
    createGeometry()
@@ -30,12 +31,6 @@ class Camera
    {
       prg.pMatrixUniform = glContext.getUniformLocation(prg, 'uPMatrix');
       prg.mvMatrixUniform = glContext.getUniformLocation(prg, 'uMVMatrix');
-   }
-
-   rotateY(angle)
-   {
-      this.rotation[1] += angle;
-      this.update();
    }
 
    getView()
@@ -50,48 +45,34 @@ class Camera
 
    getPosition()
    {
-      return this.position;//vec3.fromValues(this.view[12], this.view[13], this.view[14]);
+      return this.position;
    }
 
-   moveDirection(direction)
+   moveForward(speed = 1.0, deltaTime)
    {
-      let rotMat = mat4.create();
-      let forward = vec4.create();
-
-      mat4.identity(rotMat);
-      mat4.rotateY(rotMat, rotMat, this.rotation[1]);
-      vec4.transformMat4(forward, direction, rotMat);
-      vec3.add(this.position, this.position, forward);
-
-      this.update();
+      this.distance -= speed * deltaTime;
    }
 
-   moveForward(speed = 1)
+   moveBackward(speed = 1.0, deltaTime)
    {
-      this.moveDirection(vec4.fromValues(0.0,0.0, 1.0 * speed, 1.0));
+      this.distance += speed * deltaTime;
    }
 
-   moveBackward(speed = 1)
+   rotate(angle, deltaTime)
    {
-      this.moveDirection(vec4.fromValues(0.0,0.0, -1.0 * speed, 1.0));
-   }
-
-   moveRight(speed = 1)
-   {
-      this.moveDirection(vec4.fromValues(-1.0 * speed,0.0,0.0,1.0));
-   }
-
-   moveLeft(speed = 1)
-   {
-      this.moveDirection(vec4.fromValues(1.0 * speed,0.0,0.0,1.0));
+     // console.log(angle);
+     // console.log(deltaTime);
+     // console.log(this.angle);
+     this.angle += angle * deltaTime;
    }
 
    update()
    {
+      this.position = vec3.fromValues(this.distance * Math.cos(this.angle), 0.0, this.distance * Math.sin(this.angle));
+
       let newView = mat4.create();
       mat4.identity(newView);
-      mat4.rotateY(newView, newView, -this.rotation[1]);
-      mat4.translate(newView, newView, this.position);
+      mat4.lookAt(newView, this.position, vec3.fromValues(0.0,0.0,0.0), vec3.fromValues(0.0,1.0,0.0));
       this.view = newView;
    }
 }
