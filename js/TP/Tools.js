@@ -35,3 +35,16 @@ function generateSeed(length = 10)
 
   return text;
 }
+
+// Normalize range of values to 0-1
+function convertNormalizedValue(min, max, percent, inverse=false)
+{
+  if(inverse)
+  {
+    return max - (min + ((max-min) * percent));
+  }
+  else
+  {
+    return min + ((max-min) * percent);
+  }
+}

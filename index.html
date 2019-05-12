@@ -158,6 +158,7 @@
 			var icoSphere = new IcoSphere(camera, 6, false);
 			var fpsCounter = new FpsCounter();
 
+			// Init shaders
 			function initShaderParameters(prg)
 			{
 				//prg.pMatrixUniform = glContext.getUniformLocation(prg, 'uPMatrix');
@@ -166,14 +167,15 @@
 				icoSphere.setupShader(prg);
 			}
 
+			// Init webGL buffers
 			function initBuffers()
 			{
-				//camera.rotateY(-Math.PI/2);
 				camera.update();
 				icoSphere.scale(100);
 				icoSphere.createGeometry();
 			}
 
+			// Draw all the scene
 			function drawScene()
 			{
 				glContext.useProgram(prg);
@@ -193,10 +195,14 @@
 				glContext.uniformMatrix4fv(prg.mvMatrixUniform, false, mvMatrix);
 				//icoSphere.rotateY(Math.PI / 100);
 
+				// check if input has been pressed and execute movement to the camera
+				executeInput();
+
 				icoSphere.render();
 				fpsCounter.update();
 			}
 
+			// Init webGL
 			function initWebGL()
 			{
 				glContext = getGLContext('webgl-canvas');
@@ -212,6 +218,41 @@
 				initBuffers();
 				renderLoop();
 			}
+
+			let inputState = 0;
+			let startTime = Date.now();
+			// Execute movements on the camera
+			function executeInput()
+			{
+				let angle = Math.PI / 360.0;
+				let move = 1.0;
+
+				let elapsedTime = (Date.now() - startTime)/10;
+				startTime = Date.now();
+
+				switch(inputState)
+				{
+					case 0:
+						// Nothing
+						break;
+					case 1:
+						camera.moveForward(move, elapsedTime);
+						break;
+					case 2:
+						camera.moveBackward(move, elapsedTime);
+						break;
+					case 3:
+						camera.rotate(angle, elapsedTime);
+						break;
+					case 4:
+						camera.rotate(-angle, elapsedTime);
+						break;
+				}
+
+				camera.update();
+				icoSphere.createGeometry();
+			}
+
 		</script>
 	</head>
 	<body onload="initWebGL()">
@@ -228,7 +269,7 @@
 		<h2>Paramètres statiques</h2>
 		<br>
 		<label for="seed-txt">Graine : </label>
-		<input type="text" name="seed" id="seed-txt" value="SEED"><button type="button" onclick="randAction()" id="random-btn">Random</button><br>
+		<input type="text" name="seed" id="seed-txt" value="SEED"><button type="button" onclick="rand()" id="random-btn">Random</button><br>
 
 		<label for="layer1mul">Répétition du pattern 1 : </label>
 		<input type="number" name="layer1mul" id="layer1-multiply" value="0.5" min="0.0" max="1.0" step="0.05">
@@ -241,7 +282,7 @@
 		<input type="number" name="layer2div" id="layer2-divisor" value="0.5" min="0.0" max="1.0" step="0.05"><br>
 
 		<br>
-		<button type="button" onclick="applyAction()" id="apply-btn">Apply</button>
+		<button type="button" onclick="apply()" id="apply-btn">Apply</button>
 		<br>
 
 		<h2>Paramètres dynamiques</h2>
@@ -300,7 +341,8 @@
 
 	let angle = 0.0;
 
-	function applyAction()
+	// Apply parameters and recreate terrain/planet
+	function apply()
 	{
 		let seed = document.getElementById("seed-txt").value;
 
@@ -320,20 +362,21 @@
 		icoSphere.createGeometry();
 	}
 
-	function randAction()
+	// Create random seed
+	function rand()
 	{
 		let randomSeed = generateSeed();
-
 		document.getElementById("seed-txt").value = randomSeed;
 	}
 
+	// Set the wireframe mode
 	function setWireframeMode()
 	{
 		let enableWireframe = document.getElementById("wireframe-checkbox").checked;
-
 		icoSphere.setWireframe(enableWireframe);
 	}
 
+	// Update the sea level of the planet
 	function updateSeaLevel()
 	{
 		let seaLevelSlider = document.getElementById("sea-level");
@@ -344,71 +387,43 @@
 		seaLevelSlider.innerHTML = seaLevel;
 	}
 
-	function convertNormalizedValue(min, max, percent, inverse=false)
-	{
-		if(inverse)
-		{
-			return max - (min + ((max-min) * percent));
-		}
-		else
-		{
-			return min + ((max-min) * percent);
-		}
-	}
-
-	let startTime = Date.now();
-	let keyDownTriggered = false;
+	// Detect key pressed and enable movement
 	function onKeyDown(e)
 	{
-		if(!keyDownTriggered && e.repeat)
-		{
-			keyDownTriggered = !keyDownTriggered;
-			startTime = Date.now();
-		}
-	}
-
-	function onKeyUp(e)
-	{
-		if(keyDownTriggered)
-		{
-			keyDownTriggered = !keyDownTriggered;
-		}
-	}
-
-	function onKeyPressed(e)
-	{
-		let angle = Math.PI / 360.0;
-		let move = 1.0;
 		e = e || window.event;
 
-		let endTime = Date.now();
-		let elapsedTime = (endTime - startTime) / 10.0;
-		startTime = endTime;
+		if(e.repeat == false)
+		{
+			startTime = Date.now();
 
-		if (e.key == 'w')
-		{
-			camera.moveForward(move, elapsedTime);
+			if (e.key == 'w')
+			{
+				inputState = 1;
+			}
+			if (e.key == 's')
+			{
+				inputState = 2;
+			}
+			if (e.key == 'a')
+			{
+				inputState = 3;
+			}
+			if (e.key == 'd')
+			{
+				inputState = 4;
+			}
 		}
-		if (e.key == 's')
-		{
-			camera.moveBackward(move, elapsedTime);
-		}
-		if (e.key == 'a')
-		{
-			camera.rotate(angle, elapsedTime);
-		}
-		if (e.key == 'd')
-		{
-			camera.rotate(-angle, elapsedTime);
-		}
-
-		camera.update();
-		icoSphere.createGeometry();
 	}
 
+	// Detect when key is released and disable movement
+	function onKeyUp(e)
+	{
+		inputState = 0;
+	}
+
+	// Add keyboard events
 	document.onkeydown = onKeyDown;
 	document.onkeyup = onKeyUp;
-	document.onkeypress = onKeyPressed;
 
 	</script>
 </html>
