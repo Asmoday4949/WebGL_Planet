@@ -254,8 +254,14 @@
 	</head>
 	<body onload="initWebGL(); generatePreset1()">
 		<script>
-			displayTitle("TP: Génération procédurale de terrain", 1, 1, 1, 1, 1, 1, 1);
+			displayTitle("TP: Génération procédurale de terrain V2", 1, 1, 1, 1, 1, 1, 1);
 		</script>
+
+		<h2>Information</h2>
+
+		Auteur : Malik Fleury
+		Date : 12.05.2019
+		Cours : WebGL
 
 		<h2>Description</h2>
 
@@ -320,36 +326,9 @@
 		<div id="fps-counter">FPS : 0</div>
 		<canvas id="webgl-canvas" width="500" height="500">HTML5 is not supported</canvas>
 
-		<h2>Objectifs primaires</h2>
-		<ul>
-			<li>Creation d'une planète à l'aide l'icosaèdre subdivisé</li>
-			<li>Génération de hauteurs différentes pour le terrain</li>
-			<li>Génération déterministe de terrain (à l'aide d'une graine)</li>
-			<li>Mise en place d'un système de "LOD" naif</li>
-			<li>Définir une couleur selon la hauteur du terrain</li>
-		</ul>
+		<h2>Wiki</h2>
+		<p>Les détails d'implémentations sont trouvables sur le wiki de l'école : <a href='https://forge.ing.he-arc.ch/gitlab/inf/1819/infographie/generation-procedurale-de-terrain-v2/wikis/home'>ici</a></p>
 
-		<h2>Objectifs secondaires</h2>
-		<ul>
-			<li>Ajout de textures pour les différents niveaux du terrain</li>
-			<li>Ajout d'éléments de décores afin de rendre plus cohérent l'environnement</li>
-			<li>Amélioration du système de "LOD" (octree ?)</li>
-		</ul>
-
-		<h2>Sphère</h2>
-		<p>Pour la création de la sphère, j'ai utilisé l'icosèdre avec subidivision. Cette technique permet d'avoir des sphères uniforme.
-		Une première technique pour diminuer l'empreinte mémoire a été de vérifier si un triangle voisin n'as pas déjà effectuer l'opération de "midpoint" sur un de ses cotés.
-		Si le vertex n'est pas encore créé, on le créé et autrement on va le rechercher dans un cache afin de récupérer l'indice de ce vertex existants.
-		La seconde est d'utiliser un système de "LOD" (Level of Details). L'idée est d'augmenter le nombre de vertices de la partie intéressante de notre mesh. C'est-à-dire
-	 que plus la caméra est proche d'une zone d'intérêt, plus le nombre de vertices sera important. Moins la zone a d'intérêt, moins le nombre de vertices est important.</p>
-
-		<h2>Reliefs</h2>
-		<p>La création de reliefs sur la sphère a été effectué avec l'algorithme "Simplex Noise" (bruit de perlin améliorée).
-			Cet algorithme permet de créer du bruit de perlin, ce qui me permet de générer des hauteurs pour tous les vertices de mon terrain.
-			Un autre avantage, c'est qu'il est déterministe. ... continue</p>
-
-		<h2>Couleurs/textures</h2>
-		<p>Les couleurs de la planète sont définies en fonction de la hauteur des vertices.</p>
 
 	</body>
 	<script>

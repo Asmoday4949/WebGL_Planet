@@ -158,11 +158,7 @@ class IcoSphere extends Entity
          {
             let length = this.checkClosest(cameraVec, i1, i2, i3);
 
-            if(length > 1000)
-            {
-               depth -= 6;
-            }
-            else if(length > 700)
+            if(length > 800)
             {
                depth -= 5;
             }
@@ -173,6 +169,10 @@ class IcoSphere extends Entity
             else if(length > 100)
             {
                depth -= 3;
+            }
+            else if(length > 50)
+            {
+               depth -= 2;
             }
             else
             {
@@ -452,7 +452,7 @@ class IcoSphere extends Entity
      {
        seed = 0;
      }
-     
+
      this.seed = seed;
    }
 
