@@ -1,6 +1,7 @@
 
-class IcoSphere extends Entity
+class Planet extends Entity
 {
+   // Construct planet
    constructor(camera, subdivision = 1, wireFrameMode = false)
    {
       super();
@@ -19,6 +20,7 @@ class IcoSphere extends Entity
       this.initBuffers();
    }
 
+   // Init buffers (vertices, colors, indices)
    initBuffers()
    {
       this.vertices = [];
@@ -32,6 +34,7 @@ class IcoSphere extends Entity
       this.indicesWireFrameBuffer = null;
    }
 
+   // Create the geometry of the planet
    // To call inside initBuffer
    createGeometry()
    {
@@ -47,6 +50,7 @@ class IcoSphere extends Entity
       this.indicesWireFrameBuffer = getIndexBufferWithIndices(this.wireFrameIndices);
    }
 
+   // Setup parameters to shaders
    // To call inside initShaderParameters
    setupShader(prg)
    {
@@ -58,6 +62,7 @@ class IcoSphere extends Entity
       prg.wave = glContext.getUniformLocation(prg, "uWave");
    }
 
+   // Render the planet
    // To call inside drawScene
    render()
    {
@@ -83,6 +88,7 @@ class IcoSphere extends Entity
       }
    }
 
+   // Render the planet in wireframe or triangles
    renderAs(mode, indicesBuffer, length)
    {
       let indices = this.indices;
@@ -90,6 +96,7 @@ class IcoSphere extends Entity
       glContext.drawElements(mode, length, glContext.UNSIGNED_SHORT, 0);
    }
 
+   // Create the icosahedron (basic shape for the sphere)
    createIcosahedron()
    {
       let vertices = this.vertices;
@@ -148,16 +155,20 @@ class IcoSphere extends Entity
       let cache = new Map();
 
       this.indices = [];
+
+      // For each triangle, we subdivide if necessary
       for(let i = 0; i < copyIndices.length; i+=3)
       {
          let i1 = copyIndices[i];
          let i2 = copyIndices[i+1];
          let i3 = copyIndices[i+2];
 
+         // Is a back face of the sphere ? No -> subdivide
          if(!this.checkCullBack(cameraVec, i1, i2, i3))
          {
             let length = this.checkClosest(cameraVec, i1, i2, i3);
 
+            // Subdividision depend on distance between camera and the face
             if(length > 800)
             {
                depth -= 5;
@@ -179,6 +190,7 @@ class IcoSphere extends Entity
                depth -= 1;
             }
 
+            // Execute subdivision with custom depth for the face
             this.subdivideRec(depth, i1, i2, i3, cache);
 
             depth = copyDepth;
@@ -224,72 +236,7 @@ class IcoSphere extends Entity
       }
    }
 
-   // Subdivision to create the sphere
-   // This version works pretty well, but the detail is constant everywhere
-   // Harder to make a LOD system
-   subdivideItr(recursion)
-   {
-      let midpointsCache = new Map();     // Optimization: keep neighbor vertices
-      let vertices = this.vertices;
-      let indices = this.indices;
-      let colors = this.colors;
-      let cameraVec = this.createVectorFromPositions(this.camera.getPosition(), this.getPosition());
-
-      for(let i = 0; i < recursion; i++)
-      {
-         let newIndices = [];
-         let newWireFrameIndices = [];
-
-         // Iterate over indices to create the midpoint between vertices
-         for(let j = 0; j < indices.length; j+=3)
-         {
-            let i1 = indices[j];
-            let i2 = indices[j+1];
-            let i3 = indices[j+2];
-
-            // Check if we can skip the subdivision
-            if(this.checkCullBack(cameraVec, i1, i2, i3))
-            {
-               continue;
-            }
-
-            // Define subdivision depending distance between camera and vertices
-            let length = this.checkClosest(cameraVec, i1, i2, i3);
-            if(length > 200)
-            {
-               continue;
-            }
-            else if(length > 100)
-            {
-               newWireFrameIndices.push(i1, i2, i2, i3, i3, i1);
-            }
-
-            // Create midpoint or get existing vertex (neighbor)
-            let i12 = this.getMidpointIndex(i1, i2, midpointsCache);
-            let i23 = this.getMidpointIndex(i2, i3, midpointsCache);
-            let i31 = this.getMidpointIndex(i3, i1, midpointsCache);
-
-            // Indices for triangles
-            newIndices.push(i1, i12, i31);
-            newIndices.push(i2, i23, i12);
-            newIndices.push(i3, i31, i23);
-            newIndices.push(i12, i23, i31);
-
-            // Indices for lines (Wireframe)
-            newWireFrameIndices.push(i1, i12, i12, i31, i31, i1);
-            newWireFrameIndices.push(i2, i23, i23, i12, i12, i2);
-            newWireFrameIndices.push(i3, i31, i31, i23, i23, i3);
-            newWireFrameIndices.push(i12, i23, i23, i31, i31, i12);
-         }
-
-         // Set the new array of indices for the current subdivision level
-         this.indices = indices = newIndices;
-         this.wireFrameIndices = newWireFrameIndices;
-      }
-
-      this.printDebugInfo();
-   }
-
+   // Print several debug info. about the mesh
    printDebugInfo()
    {
       console.log("Vertices : " + this.vertices.length);
@@ -297,6 +244,7 @@ class IcoSphere extends Entity
       console.log("Colors : " + this.colors.length);
    }
 
+   // Define the height of the terrain with the simplex-noise
    defineHeight(vector)
    {
      let height = 0;
@@ -311,31 +259,7 @@ class IcoSphere extends Entity
      return this.createVectorLength(copyArray(vector), height);
    }
 
-   colorizeDependingHeight()
-   {
-     let vertices = this.vertices;
-     let colors = this.colors;
-
-     for(let i = 0; i < vertices.length; i+=3)
-     {
-       let v = [vertices[i], vertices[i+1], vertices[i+2]];
-       let height = this.getHeight(v) * 100;
-
-       if(height < 98)
-       {
-         colors.push(0.0,0.0,1.0,1.0);
-       }
-       else if(height < 102)
-       {
-         colors.push(0.0,0.65,0.0,1.0);
-       }
-       else
-       {
-         colors.push(1.0,1.0,1.0,1.0);
-       }
-     }
-   }
-
+   // Check if the triangle is in front of the camera or not
    checkCullBack(cameraVec, i1, i2, i3)
    {
       let v1 = vec3.fromValues(this.vertices[i1*3], this.vertices[i1*3+1], this.vertices[i1*3+2]);
@@ -347,6 +271,7 @@ class IcoSphere extends Entity
       return !(angle > -90 && angle < 90);
    }
 
+   // Get the distance between the camera and the triangle
    checkClosest(cameraVec, i1, i2, i3)
    {
       let v1 = vec3.fromValues(this.vertices[i1*3] * this.size, this.vertices[i1*3+1] * this.size, this.vertices[i1*3+2] * this.size);
@@ -395,6 +320,7 @@ class IcoSphere extends Entity
       return i12;
    }
 
+   // Define height and add the vector to array of vertices
    addVectorToArray(vector)
    {
       let vertices = this.vertices;
@@ -407,6 +333,7 @@ class IcoSphere extends Entity
       vertices.push(vector[2] + heightVec[2]);
    }
 
+   // Normalize vector
    normalize(vector)
    {
       //let magnitude = this.getMagnitude(vector);
@@ -415,16 +342,19 @@ class IcoSphere extends Entity
       return vector;
    }
 
+   // Get the length of the vector
    getMagnitude(vector)
    {
       return Math.sqrt(vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2]);
    }
 
+   // Create a vector from two points
    createVectorFromPositions(headVec3, queueVec3)
    {
       return vec3.fromValues(headVec3[0]-queueVec3[0], headVec3[1]-queueVec3[1], headVec3[2]-queueVec3[2]);
    }
 
+   // Create a vector with a specified length
    createVectorLength(direction, length)
    {
      let vector = this.normalize(direction);
@@ -434,18 +364,14 @@ class IcoSphere extends Entity
      return vector;
    }
 
+   // Get the height of the vertex
    getHeight(vertice)
    {
      let heightVector = this.createVectorFromPositions(vertice, super.getPosition());
      return vec3.length(heightVector);
    }
 
-   scale(size)
-   {
-     this.size = size;
-     super.scale([size,size,size]);
-   }
-
+   // Set a new seed
    setSeed(seed)
    {
      if(seed == "")
@@ -456,11 +382,13 @@ class IcoSphere extends Entity
      this.seed = seed;
    }
 
+   // Set a new sea level
    setSeaLevel(seaLevel)
    {
      this.seaLevel = seaLevel;
    }
 
+   // Set perlin noise parameters to create topography of the terrain
    setTopographyLayers(layer1Mul, layer1Div, layer2Mul, layer2Div)
    {
       this.layer1Mul = layer1Mul;
@@ -469,6 +397,7 @@ class IcoSphere extends Entity
       this.layer2Div = layer2Div;
    }
 
+   // Set the wireframe mode
    setWireframe(enable)
    {
      this.wireFrameMode = enable;

@@ -10,8 +10,7 @@
 		<script src="./js/External/simplex-noise.js"></script>
 		<script src="./js/TP/Tools.js"></script>
 		<script src="./js/TP/Entity.js"></script>
-		<script src="./js/TP/IcoSphere.js"></script>
-		<script src='./js/TP/Terrain.js'></script>
+		<script src="./js/TP/Planet.js"></script>
 		<script src="./js/TP/FpsCounter.js"></script>
 		<script src="./js/TP/Camera.js"></script>
 
@@ -29,6 +28,7 @@
 				vVertexPosition = aVertexPosition;
 				vOriginalVertexPosition = aVertexPosition;
 
+				// If vertex is under water, move it to sea level
 				if(length(aVertexPosition) < uSeaLevel)
 				{
 					vVertexPosition = normalize(vVertexPosition) * uSeaLevel;
@@ -136,6 +136,7 @@
 					percent = (level8 - height) / (level8 - level7);
 				}
 
+				// Compute the color depending on height of the terrain
 				currentColor = heightColor1 * percent + heightColor2 * (1.0 - percent);
 				gl_FragColor = currentColor;
 			}
@@ -151,7 +152,7 @@
 			var vMatrix = mat4.create();
 
 			var camera = new Camera(500, 500);
-			var icoSphere = new IcoSphere(camera, 6, false);
+			var planet = new Planet(camera, 6, false);
 			var fpsCounter = new FpsCounter();
 
 			// Init shaders
@@ -160,15 +161,15 @@
 				//prg.pMatrixUniform = glContext.getUniformLocation(prg, 'uPMatrix');
 		    //prg.mvMatrixUniform = glContext.getUniformLocation(prg, 'uMVMatrix');
 				camera.setupShader(prg);
-				icoSphere.setupShader(prg);
+				planet.setupShader(prg);
 			}
 
 			// Init webGL buffers
 			function initBuffers()
 			{
 				camera.update();
-				icoSphere.scale(100);
-				icoSphere.createGeometry();
+				planet.scale(100);
+				planet.createGeometry();
 			}
 
 			// Draw all the scene
@@ -182,20 +183,15 @@
 				glContext.viewport(0, 0, c_width, c_height);
 
 				mat4.identity(mvMatrix);
-				mat4.multiply(mvMatrix, camera.getView(), icoSphere.getModel());
+				mat4.multiply(mvMatrix, camera.getView(), planet.getModel());
 
-				// Comment passer le model de chaque objet ?
-				// Passer le model à partir des objets directement au shader ?
-				// Passer tous les objets dans la camera et parcours tous les objets pour obtenir les model ?
-				// Séparer le model de la view et de la projection
 				glContext.uniformMatrix4fv(prg.pMatrixUniform, false, camera.getProjection());
 				glContext.uniformMatrix4fv(prg.mvMatrixUniform, false, mvMatrix);
-				//icoSphere.rotateY(Math.PI / 100);
 
 				// check if input has been pressed and execute movement to the camera
 				executeInput();
 
-				icoSphere.render();
+				planet.render();
 				fpsCounter.update();
 			}
 
@@ -203,13 +199,6 @@
 			function initWebGL()
 			{
 				glContext = getGLContext('webgl-canvas');
-
-				//programsDict = initPrograms(["terrain-shader", "water-shader"]);
-				//terrainPrg = programsDict["terrain-shader"];
-				//waterPrg = programsDict["water-shader"];
-
-				//initTerrainShaderParameters(terrainPrg);
-				//initWaterShaderParameters(waterPrg);
 
 				initProgram();
 				initBuffers();
@@ -246,8 +235,11 @@
 						break;
 				}
 
-				camera.update();
-				icoSphere.createGeometry();
+				if(inputState != 0)
+				{
+					camera.update();
+					planet.createGeometry();
+				}
 			}
 
 		</script>
@@ -259,9 +251,11 @@
 
 		<h2>Information</h2>
 
-		Auteur : Malik Fleury
-		Date : 12.05.2019
-		Cours : WebGL
+		<ul>
+			<li>Auteur : Malik Fleury</li>
+			<li>Date : 12.05.2019</li>
+			<li>Cours : WebGL</li>
+		</ul>
 
 		<h2>Description</h2>
 
@@ -353,10 +347,10 @@
 
 		updateSeaLevel();
 
-		icoSphere.setWireframe(false);
-		icoSphere.setSeed(seed);
-		icoSphere.setTopographyLayers(layer1Mul, layer1Div, layer2Mul, layer2Div);
-		icoSphere.createGeometry();
+		planet.setWireframe(false);
+		planet.setSeed(seed);
+		planet.setTopographyLayers(layer1Mul, layer1Div, layer2Mul, layer2Div);
+		planet.createGeometry();
 	}
 
 	// Create random seed
@@ -370,7 +364,7 @@
 	function setWireframeMode()
 	{
 		let enableWireframe = document.getElementById("wireframe-checkbox").checked;
-		icoSphere.setWireframe(enableWireframe);
+		planet.setWireframe(enableWireframe);
 	}
 
 	// Update the sea level of the planet
@@ -380,7 +374,7 @@
 
 		let seaLevel = convertNormalizedValue(0.9, 1.1, seaLevelSlider.value);
 
-		icoSphere.setSeaLevel(seaLevel);
+		planet.setSeaLevel(seaLevel);
 		seaLevelSlider.innerHTML = seaLevel;
 	}
 
