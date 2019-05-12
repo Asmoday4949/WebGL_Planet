@@ -1,15 +1,18 @@
 
+// Generate random values from between min and max
 function random(min, max)
 {
    let range = max - min;
    return (Math.random() * range) + min;
 }
 
+// Radian to degree function
 function radiansToDegrees(radians)
 {
    return radians * 180.0 / Math.PI;
 }
 
+// Deep copy
 function copyArray(array)
 {
    let newArray = [];
@@ -22,6 +25,7 @@ function copyArray(array)
    return newArray;
 }
 
+// Generate random seed
 // Source : https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
 function generateSeed(length = 10)
 {
