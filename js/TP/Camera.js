@@ -17,7 +17,7 @@ class Camera
       mat4.identity(this.projection);
       mat4.perspective(this.projection, degToRad(fieldOfView), width / height, near, far);
 
-      this.distance = 250.0;
+      this.distance = 235.0;
       this.angle = 0.0;
       this.rotate(0.0, 1.0);
    }

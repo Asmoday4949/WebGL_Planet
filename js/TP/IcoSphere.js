@@ -448,6 +448,11 @@ class IcoSphere extends Entity
 
    setSeed(seed)
    {
+     if(seed == "")
+     {
+       seed = 0;
+     }
+     
      this.seed = seed;
    }
 

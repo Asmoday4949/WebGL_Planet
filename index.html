@@ -47,10 +47,6 @@
 			uniform float uSeaLevel;
 			uniform float uWave;
 
-			//uniform vec3 vHeightColorsSet1;
-			//uniform vec3 vHeightColorsSet2;
-			//uniform vec3 vHeightColorsSet3;
-
 			void main(void)
 			{
 				vec4 currentColor = vec4(1.0,1.0,1.0,1.0);
@@ -180,6 +176,7 @@
 			{
 				glContext.useProgram(prg);
 				glContext.clearColor(0.0, 0.0, 0.0, 1.0);
+
 				glContext.enable(glContext.DEPTH_TEST);
 				glContext.clear(glContext.COLOR_BUFFER_BIT | glContext.DEPTH_BUFFER_BIT);
 				glContext.viewport(0, 0, c_width, c_height);
@@ -255,54 +252,73 @@
 
 		</script>
 	</head>
-	<body onload="initWebGL()">
+	<body onload="initWebGL(); generatePreset1()">
 		<script>
 			displayTitle("TP: Génération procédurale de terrain", 1, 1, 1, 1, 1, 1, 1);
 		</script>
 
-		<p>Cette application webGL permet la génération de terrain d'une planète de manière procédurale. Elle comporte deux catégories de paramètres modifiables :
-		<ol>
-			<li>statiques: tous les paramètres modifiés doivent obligatoirement être valider afin de regénérer la planète.</li>
-			<li>dynamique: tous les paramètres sont appliqués en direct et ne nécessite aucune validation.</li>
-		</ol>
+		<h2>Description</h2>
 
-		<h2>Paramètres statiques</h2>
+		<p>Cette application webGL permet la génération de terrain d'une planète de manière procédurale. Voici une description des quelques paramètres modifiables:</p>
+
+		<ul>
+			<li><b>Seed</b> : elle permet de générer un terrain/planète selon une chaîne de caractères.</li>
+			<li><b>Répétition du pattern X</b> : la fréquence du perlin noise. Plus la valeur est basse, moins la fréquence est importante. Cela implique que l'on aura de gros continants. Si la fréquence est élevée, le résultat sera plutôt des îles.</li>
+			<li><b>Hauteur X</b> : amplitude du perlin noise. Cela augmente la hauteur du terrain. </li>
+			<li><b>Wireframe</b> : permet d'activer le mode "fil de fer".</li>
+			<li><b>Niveau de la mer</b> : permet de définir la hauteur du niveau de la mer sur la planète.</li>
+		</ul>
+
+		<p>Pour obtenir des résultats convaincants, il est nécessaires d'utiliser les "couches" de perlin noise correctement.</p>
+		<ul>
+			<li>La couche n° 1 doit avoir une répétition du pattern faible et un amplitude faible également, afin de créer les continents.</li>
+			<li>La couche n° 2 doit avoir une répétition du pattern et une hauteur plus élevée que la couche n°1. Cela permet de créer les détails de la planète/terrain.</li>
+		</ul>
+
+		<h2>Touches</h2>
+
+		<p>Il est possible de se déplacer autour de la planète. Voici la liste des mouvements possibles :</p>
+
+		<ul>
+			<li><b>W</b> : permet de bouger la caméra en avant.</li>
+			<li><b>S</b> : permet de bouger la caméra en arrière.</li>
+			<li><b>A</b> : permet de tourner la caméra à gauche.</li>
+			<li><b>D</b> : permet de tourner la caméra à droite.</li>
+		</ul>
+
+		<h2>Paramètres</h2>
 		<br>
-		<label for="seed-txt">Graine : </label>
-		<input type="text" name="seed" id="seed-txt" value="SEED"><button type="button" onclick="rand()" id="random-btn">Random</button><br>
+		<label for="seed-txt"><b>Seed : </b></label>
+		<input type="text" name="seed" id="seed-txt" value="SEED" oninput="apply()"><button type="button" onclick="rand();apply()" id="random-btn">Random</button><br>
 
-		<label for="layer1mul">Répétition du pattern 1 : </label>
-		<input type="number" name="layer1mul" id="layer1-multiply" value="0.5" min="0.0" max="1.0" step="0.05">
+		<label for="layer1mul"><b>Couche 1 : </b>Répétition du pattern 1 : </label>
+		<input type="number" name="layer1mul" id="layer1-multiply" value="0.2" min="0.0" max="1.0" step="0.05" onchange="apply()">
 		<label for="layer1div">Hauteur 1 : </label>
-		<input type="number" name="layer1div" id="layer1-divisor"  value="0.5" min="0.0" max="1.0" step="0.05"><br>
+		<input type="number" name="layer1div" id="layer1-divisor"  value="0.6" min="0.0" max="1.0" step="0.05" onchange="apply()"><br>
 
-		<label for="layer2mul">Répétition du pattern 2 : </label>
-		<input type="number" name="layer2mul" id="layer2-multiply" value="0.5" min="0.0" max="1.0" step="0.05">
+		<label for="layer2mul"><b>Couche 2 : </b>Répétition du pattern 2 : </label>
+		<input type="number" name="layer2mul" id="layer2-multiply" value="0.6" min="0.0" max="1.0" step="0.05" onchange="apply()">
 		<label for="layer2div">Hauteur 2 : </label>
-		<input type="number" name="layer2div" id="layer2-divisor" value="0.5" min="0.0" max="1.0" step="0.05"><br>
+		<input type="number" name="layer2div" id="layer2-divisor" value="0.8" min="0.0" max="1.0" step="0.05" onchange="apply()"><br>
 
-		<br>
-		<button type="button" onclick="apply()" id="apply-btn">Apply</button>
-		<br>
+		<label for="sea-level"><b>Niveau de la mer : </b></label>
+		<input type="range" min="0.0" max="1.0" value="0.5" step="0.01" onchange="updateSeaLevel()" class="slider" id="sea-level"></input><br>
 
-		<h2>Paramètres dynamiques</h2>
-		<br>
-		<label for="wireframe-checkbox">Wireframe : </label>
-		<input type="checkbox" id="wireframe-checkbox" onclick="setWireframeMode()"><br>
+		<label for="wireframe-checkbox"><b>Wireframe : </b></label>
+		<input type="checkbox" id="wireframe-checkbox" onclick="setWireframeMode()"><br><br>
 
-		<label for="lod-distance">Distance de LOD : </label>
-		<input type="number" name="lod" id="lod-distance" min="1" max="3"><br>
-
-		<label for="sea-level">Niveau de la mer : </label>
-		<input type="range" min="0.0" max="1.0" value="0.5" step="0.01" onchange="updateSeaLevel()" class="slider" id="sea-level"></input>
+		<p>Quelques pré-configurations :</p>
+		<p>
+			<button type="button" onclick="generatePreset1()" id="btn-preset-1">Preset 1 (équilibré)</button>
+			<button type="button" onclick="generatePreset2()" id="btn-preset-1">Preset 2 (îlots)</button>
+			<button type="button" onclick="generatePreset3()" id="btn-preset-1">Preset 3 (montagneux)</button>
+		</p>
 
 		<h2>Résultat</h2>
 
 		<br>
 		<div id="fps-counter">FPS : 0</div>
 		<canvas id="webgl-canvas" width="500" height="500">HTML5 is not supported</canvas>
-
-
 
 		<h2>Objectifs primaires</h2>
 		<ul>
@@ -355,6 +371,8 @@
 		layer2Mul = convertNormalizedValue(0.0, 6.0, layer2Mul);
 		layer1Div = convertNormalizedValue(1.0, 30.0, layer1Div, true);
 		layer2Div = convertNormalizedValue(1.0, 30.0, layer2Div, true);
+
+		updateSeaLevel();
 
 		icoSphere.setWireframe(false);
 		icoSphere.setSeed(seed);
@@ -424,6 +442,33 @@
 	// Add keyboard events
 	document.onkeydown = onKeyDown;
 	document.onkeyup = onKeyUp;
+
+	function generatePreset1()
+	{
+		generatePreset("Preset 1",0.2,0.6,0.6,0.8,0.5);
+	}
+
+	function generatePreset2()
+	{
+		generatePreset("Preset 2",0.3,0.65,0.5,0.9,0.8);
+	}
+
+	function generatePreset3()
+	{
+		generatePreset("Preset 3",0.2,0.6,0.5,0.8,0.35);
+	}
+
+	function generatePreset(seed, mul1, div1, mul2, div2, seaLevel)
+	{
+		document.getElementById("seed-txt").value = seed;
+		document.getElementById("layer1-multiply").value = mul1;
+		document.getElementById("layer1-divisor").value = div1;
+		document.getElementById("layer2-multiply").value = mul2;
+		document.getElementById("layer2-divisor").value = div2;
+		document.getElementById("sea-level").value = seaLevel;
+
+		apply();
+	}
 
 	</script>
 </html>
