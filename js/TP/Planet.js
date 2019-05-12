@@ -382,6 +382,13 @@ class Planet extends Entity
      this.seed = seed;
    }
 
+   // Set scale
+   scale(size)
+   {
+     this.size = size;
+     super.scale([size,size,size]);
+   }
+
    // Set a new sea level
    setSeaLevel(seaLevel)
    {
