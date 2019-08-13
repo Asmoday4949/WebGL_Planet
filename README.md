@@ -1,6 +1,10 @@
-# Generation procedurale de terrain V2
+# Procedural planet generation
 
-Programme en JS permettant de générer des planètes/terrains.
+Little program which generate planets. A simple system of LOD (level of details) based on [this project](https://github.com/sp4cerat/Planet-LOD) has been used.
 
 - WebGL
 - HTML/CSS/JS/GLSL
+
+## Result
+
+![Result](./Result.jpg "Result")
