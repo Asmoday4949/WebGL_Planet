@@ -8,3 +8,7 @@ Little program which generate planets. A simple system of LOD (level of details)
 ## Result
 
 ![Result](./Result.jpg "Result")
+
+## Interactive demo
+
+https://malik-fleury.github.io/projects/planet/index.html
